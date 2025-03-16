@@ -84,8 +84,7 @@ abstract class Avatar implements IAvatar {
 	 * @return string
 	 *
 	 */
-	protected function getAvatarVector(int $size, bool $darkTheme): string {
-		$userDisplayName = $this->getDisplayName();
+	protected function getAvatarVector(string $userDisplayName, int $size, bool $darkTheme): string {
 		$fgRGB = $this->avatarBackgroundColor($userDisplayName);
 		$bgRGB = $fgRGB->alphaBlending(0.1, $darkTheme ? new Color(0, 0, 0) : new Color(255, 255, 255));
 		$fill = sprintf('%02x%02x%02x', $bgRGB->red(), $bgRGB->green(), $bgRGB->blue());
@@ -93,6 +92,14 @@ abstract class Avatar implements IAvatar {
 		$text = $this->getAvatarText();
 		$toReplace = ['{size}', '{fill}', '{fgFill}', '{letter}'];
 		return str_replace($toReplace, [$size, $fill, $fgFill, $text], $this->svgTemplate);
+	}
+
+	protected function getFont(string $userDisplayName) {
+		if (preg_match('/\p{Han}/u', $userDisplayName) === 1) {
+			return __DIR__ . '/../../../core/fonts/NotoSansSC-Regular.ttf';
+		}
+
+		return __DIR__ . '/../../../core/fonts/NotoSans-Regular.ttf';
 	}
 
 	/**
@@ -108,8 +115,7 @@ abstract class Avatar implements IAvatar {
 			return null;
 		}
 		try {
-			$font = __DIR__ . '/../../../core/fonts/NotoSans-Regular.ttf';
-			$svg = $this->getAvatarVector($size, $darkTheme);
+			$svg = $this->getAvatarVector($userDisplayName, $size, $darkTheme);
 			$avatar = new Imagick();
 			$avatar->setFont($font);
 			$avatar->readImageBlob($svg);
@@ -151,7 +157,7 @@ abstract class Avatar implements IAvatar {
 		}
 		imagefilledrectangle($im, 0, 0, $size, $size, $background);
 
-		$font = __DIR__ . '/../../../core/fonts/NotoSans-Regular.ttf';
+		$font = $this->getFont($userDisplayName);
 
 		$fontSize = $size * 0.4;
 		[$x, $y] = $this->imageTTFCenter(
